@@ -1,0 +1,281 @@
+import 'package:bitirme_proje/constants/entire_constants.dart';
+import 'package:flutter/material.dart';
+
+import '../model/books.dart';
+
+class BooksDetailPage extends StatelessWidget {
+  const BooksDetailPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final data = ModalRoute.of(context)!.settings.arguments as BooksModel;
+
+    return Scaffold(
+        appBar: AppBar(title: Text("Kitap Detayları")),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            height: 900,
+            decoration: BoxDecoration(
+                color: Colors.black.withAlpha(2).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.9),
+                      blurRadius: 5,
+                      spreadRadius: 5)
+                ]),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Container(
+                        width: 300,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                              image: data.volumeInfo!.imageLinks == null
+                                  ? const AssetImage(
+                                      "assets/images/default.jpg")
+                                  : NetworkImage(data.volumeInfo!.imageLinks!
+                                      .thumbnail!) as ImageProvider),
+                          color: Colors.black.withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      height: 400,
+                      width: 100,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: EntireConstants.bookTagsTop2.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Container(
+                                    width: 100,
+                                    decoration: BoxDecoration(
+                                        color: EntireConstants
+                                            .detailBooksBackColor(),
+                                        borderRadius:
+                                            const BorderRadius.horizontal(
+                                                left: Radius.circular(25))),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          EntireConstants.bookTagsTop2[index],
+                                          style: EntireConstants.whiteText10(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: EntireConstants.bookTags.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Container(
+                                    width: 100,
+                                    decoration: BoxDecoration(
+                                        color: EntireConstants
+                                            .detailBooksBackColor(),
+                                        borderRadius:
+                                            const BorderRadius.horizontal(
+                                                left: Radius.circular(25))),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Center(
+                                        child: Text(
+                                          EntireConstants.bookTags[index],
+                                          style: EntireConstants.whiteText10(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 260,
+                      height: 400,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                              child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 200,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.title!,
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  width: 200,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.description == null
+                                            ? "-"
+                                            : data.volumeInfo!.description!
+                                                .substring(
+                                                    0,
+                                                    data.volumeInfo!
+                                                        .description!.length),
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  width: 200,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.authors == null
+                                            ? "-"
+                                            : data.volumeInfo!.authors
+                                                .toString(),
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  width: 200,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.publishedDate
+                                            .toString(),
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  width: 200,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.pageCount.toString(),
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  width: 100,
+                                  decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.horizontal(
+                                          right: Radius.circular(25))),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Center(
+                                      child: Text(
+                                        data.volumeInfo!.language!,
+                                        style: EntireConstants
+                                            .detailBooksFontColor10(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                              ],
+                            ),
+                          ))
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ));
+  }
+}

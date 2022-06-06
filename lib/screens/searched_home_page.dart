@@ -1,0 +1,626 @@
+import 'dart:io';
+
+import 'package:background_app_bar/background_app_bar.dart';
+import 'package:bitirme_proje/application/book_notifier.dart';
+import 'package:bitirme_proje/constants/entire_constants.dart';
+import 'package:bitirme_proje/model/myBooksModel.dart';
+import 'package:bitirme_proje/providers/application_providers.dart';
+import 'package:bitirme_proje/screens/books_detail.page.dart';
+
+import 'package:bitirme_proje/services/firebase_database_services.dart';
+import 'package:bitirme_proje/themes/themes.dart';
+import 'package:bitirme_proje/widgets/get_random_books_widget.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:focused_menu/focused_menu.dart';
+import 'package:focused_menu/modals.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
+
+import '../model/booksModel/books.dart';
+import '../providers/api_providers.dart';
+import '../widgets/floating_action_home_widget.dart';
+import '../widgets/my_custom_listtile_widget.dart';
+
+class SearchedHomePage extends ConsumerStatefulWidget {
+  List<MyBooksModel> allBooks = [];
+  String? gelenQuery;
+  String? gelenQueryYazar;
+
+  bool gelenQueryYazarBool;
+  bool gelenQueryAdBool;
+  bool gelenQueryFree;
+  bool gelenQueryPaid;
+  bool gelenQueryFindBook;
+
+  SearchedHomePage({
+    Key? key,
+    this.gelenQuery,
+    this.gelenQueryYazar,
+    this.gelenQueryAdBool = false,
+    this.gelenQueryYazarBool = false,
+    this.gelenQueryFree = false,
+    this.gelenQueryFindBook = false,
+    this.gelenQueryPaid = false,
+  }) : super(key: key);
+
+  @override
+  _SearchedHomePageState createState() => _SearchedHomePageState();
+}
+
+class _SearchedHomePageState extends ConsumerState<SearchedHomePage>
+    with TickerProviderStateMixin {
+  List<BooksModel>? book;
+  String? query = "satranç";
+  late List<BooksModel> snapshotData;
+
+  bool loading = true;
+  var _currentIndex = 0;
+
+  final ScrollController _scrollController = ScrollController();
+  late final AnimationController _controller;
+//widget.gelenQuery == null ? "insan" : widget.gelenQuery!
+
+/*
+  () => widget.gelenQueryYazarBool ? ref.read(bookNotifierProvider.notifier).getBooksByAuthor(
+            widget.gelenQueryYazar!) : widget.gelenQueryAdBool
+            );
+*/
+  @override
+  void initState() {
+    super.initState();
+    snapshotData = [];
+    _controller = AnimationController(vsync: this);
+    Future.delayed(Duration.zero, () {
+      if (widget.gelenQueryYazarBool) {
+        return ref
+            .read(bookNotifierProvider.notifier)
+            .getBooksByAuthor(widget.gelenQueryYazar!);
+      } else if (widget.gelenQueryFindBook) {
+        return ref
+            .read(bookNotifierProvider.notifier)
+            .fetchBookFullSearchedWord(widget.gelenQuery!);
+      } else if (widget.gelenQueryFree) {
+        return ref
+            .read(bookNotifierProvider.notifier)
+            .fetchBooksByFreeBooks(widget.gelenQuery!);
+      } else if (widget.gelenQueryPaid) {
+        return ref
+            .read(bookNotifierProvider.notifier)
+            .fetchBooksByPaidBooks(widget.gelenQuery!);
+      } else if (widget.gelenQueryAdBool) {
+        return ref
+            .read(bookNotifierProvider.notifier)
+            .getBooks(widget.gelenQuery!);
+      } else {
+        return ref.read(bookNotifierProvider.notifier).getBooks("macera");
+      }
+    });
+    book = [];
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        print("SCROLL TETİKLENDİ");
+      }
+    });
+  }
+
+  /* download() async {
+    if (Platform.isAndroid || Platform.isIOS) {
+      print('download');
+      await downloadFile();
+    } else {
+      loading = false;
+    }
+  } */
+
+  @override
+  Widget build(BuildContext context) {
+    print("ARAMA DEĞERİ YAZAR: " +
+        widget.gelenQueryYazar.toString() +
+        widget.gelenQueryYazarBool.toString());
+
+    final isDarkMode = ref.watch(isDarkModeProvider);
+
+    //String? queryData = ModalRoute.of(context)!.settings.arguments as String;
+    loading = true;
+    return Scaffold(
+      /* appBar: AppBar(
+        actions: [
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  if (isDarkMode) {
+                    ref.read(changeThemeProvider.state).state = ThemeMode.light;
+                  } else {
+                    ref.read(changeThemeProvider.state).state = ThemeMode.dark;
+                  }
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(100)),
+                      child: isDarkMode
+                          ? const Icon(Icons.light_mode)
+                          : const Icon(Icons.dark_mode)),
+                ),
+              ),
+            ],
+          )
+        ],
+        backgroundColor: isDarkMode
+            ? AppTheme.darkTheme.appBarTheme.backgroundColor
+            : AppTheme.lightTheme.appBarTheme.backgroundColor,
+        foregroundColor: isDarkMode
+            ? AppTheme.darkTheme.appBarTheme.foregroundColor
+            : AppTheme.lightTheme.appBarTheme.foregroundColor,
+        title: Center(
+          child: Text(
+            "Kütüphane",
+            style: TextStyle(fontFamily: 'Mali'),
+          ),
+        ),
+      ), */
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              actions: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        if (isDarkMode) {
+                          ref.read(changeThemeProvider.state).state =
+                              ThemeMode.light;
+                        } else {
+                          ref.read(changeThemeProvider.state).state =
+                              ThemeMode.dark;
+                        }
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100)),
+                            child: isDarkMode
+                                ? const Icon(Icons.light_mode)
+                                : const Icon(Icons.dark_mode)),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+              iconTheme: IconThemeData(color: Colors.white),
+              expandedHeight: 150,
+              floating: false,
+              pinned: true,
+              snap: false,
+              elevation: 0.0,
+              backgroundColor: Colors.transparent,
+              flexibleSpace: BackgroundFlexibleSpaceBar(
+                title: Text("Kütüphane",
+                    style: EntireConstants.googleFontsCategoriesPageAppBar()),
+                centerTitle: true,
+                background: ClipRect(
+                  child: Container(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                    ),
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: !isDarkMode
+                            ? AssetImage(
+                                "assets/images/homePageAppBarLightBack.jpg")
+                            : AssetImage(
+                                "assets/images/homePageAppBarDarkBack.jpg"),
+                        fit: BoxFit.fill,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          ];
+        },
+        body: Consumer(builder: (context, watch, child) {
+          //  print("WİDGET GELEN QUERY" + widget.gelenQuery!);
+          final state = ref.watch(bookNotifierProvider);
+
+          if (state is BookInitial) {
+            print("BookInitial çalıştı");
+            return buildInitialInput([], _scrollController);
+          } else if (state is BookLoading) {
+            print("BookLoading çalıştı");
+            return buildLoading();
+          } else if (state is BookLoaded) {
+            print("BookLoaded çalıştı");
+
+            snapshotData = state.books;
+
+            print("*** HOMEPAGE **");
+            if (snapshotData.isEmpty) {
+              print("Liste boş HOme PAge");
+            } else {
+              print("Liste dolu home page");
+            }
+            return buildWidgetWithData(
+              context,
+              state.books,
+              widget.gelenQuery == null ? "insan" : widget.gelenQuery!,
+              ref,
+              widget.allBooks,
+              _controller,
+              _scrollController,
+            );
+          } else if (state is BookError) {
+            print("BookError çalıştı");
+            return Scaffold(
+              body: ScaffoldMessenger(
+                  child: SnackBar(
+                content: Text("sadsadsadas"),
+              )),
+            );
+          } else {
+            return buildInitialInput(book!, _scrollController);
+          }
+        }),
+      ),
+      floatingActionButton: loading != false
+          ? FloatinButtonsHome(
+              booksModel: snapshotData,
+              bookQuery:
+                  widget.gelenQuery == null ? "insan" : widget.gelenQuery!,
+            )
+          : null,
+    );
+  }
+}
+
+Widget buildLoading() {
+  return Center(child: SpinKitCubeGrid(color: Colors.red));
+}
+
+Widget buildInitialInput(List<BooksModel> book, _scrollController) {
+  FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseDatabaseService _service = FirebaseDatabaseService();
+  return ListView.builder(
+      controller: _scrollController,
+      itemCount: book.length,
+      itemBuilder: ((context, index) {
+        return Padding(
+          padding: const EdgeInsets.all(1.0),
+          child: FocusedMenuHolder(
+            blurSize: 5,
+            animateMenuItems: true,
+            menuBoxDecoration: BoxDecoration(
+                color: Colors.indigo, borderRadius: BorderRadius.circular(14)),
+            onPressed: () {
+              if (_auth.currentUser != null) {
+                // _service.booksAddToDatabase(book, _auth.currentUser!);
+                Navigator.pushNamed(context, '/MyLibraryPage', arguments: book);
+              } else {
+                SnackBar snackBar =
+                    SnackBar(content: Text("Lütfen oturum açın"));
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+              }
+            },
+            menuItems: [
+              FocusedMenuItem(
+                  trailingIcon: const Icon(Icons.library_books),
+                  title: Text("Kitabı kütüphaneme ekle"),
+                  onPressed: () {})
+            ],
+            child: Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                color: EntireConstants.cardBackColor(),
+                child: InkWell(
+                  onTap: () {
+                    print(book[index].id.toString() + " tıklandı");
+                    Navigator.pushNamed(context, '/BooksDetailPage',
+                        arguments: book[index]);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(3.0),
+                    child: MyCustomListTile(
+                        thumbnail: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: book[index].volumeInfo!.imageLinks == null
+                                ? Image.asset("assets/images/default.jpg")
+                                : Image.network(
+                                    book[index]
+                                        .volumeInfo!
+                                        .imageLinks!
+                                        .thumbnail!,
+                                    fit: BoxFit.fill,
+                                  )),
+                        title: book[index].volumeInfo!.title!,
+                        description: book[index].volumeInfo!.description == null
+                            ? "Açıklama yok"
+                            : book[index].volumeInfo!.description! + "...",
+                        author: book[index].volumeInfo!.authors == null
+                            ? "yazar yok"
+                            : book[index].volumeInfo!.authors![0]),
+                  ),
+                )),
+          ),
+        );
+      }));
+}
+
+Widget buildWidgetWithData(
+    context,
+    List<BooksModel> book,
+    String bookName,
+    WidgetRef ref,
+    //List<String>? bookID,
+    List<MyBooksModel> allBooks,
+    AnimationController controller,
+    ScrollController scrollController) {
+  List<String> bookID = [];
+  FirebaseDatabaseService _service = FirebaseDatabaseService();
+  FirebaseAuth _auth = FirebaseAuth.instance;
+  final isDarkMode = ref.watch(isDarkModeProvider);
+
+  return Column(
+    children: [
+      InkWell(
+        splashColor: Colors.black,
+        onTap: (() {
+          debugPrint("Rastgele Kitap Getir tıklandı");
+          if (_auth.currentUser != null) {
+            _onAlertButtonPressed(context, isDarkMode, book);
+          } else {
+            SnackBar snackBar = SnackBar(content: Text("Lütfen giriş yapınız"));
+            ScaffoldMessenger.of(context).showSnackBar(snackBar);
+          }
+        }),
+        child: Container(
+          color: Color.fromARGB(255, 151, 12, 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                width: 10,
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black,
+                            offset: Offset(5, 5),
+                            blurRadius: 5,
+                          ),
+                          BoxShadow(
+                            color: Colors.white,
+                            offset: Offset(-5, -5),
+                            blurRadius: 5,
+                          )
+                        ],
+                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white),
+                    child: Icon(
+                      Icons.collections_bookmark,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      Expanded(
+        child: ListView.builder(
+            controller: scrollController,
+            shrinkWrap: true,
+            itemCount: book.length,
+            itemBuilder: ((context, index) {
+              bookID.add(book[index].id!);
+
+              return Padding(
+                padding: const EdgeInsets.all(1.0),
+                child: FocusedMenuHolder(
+                  blurSize: 5,
+                  animateMenuItems: true,
+                  menuBoxDecoration: BoxDecoration(
+                      color: Colors.indigo,
+                      borderRadius: BorderRadius.circular(14)),
+                  onPressed: () {},
+                  menuItems: [
+                    FocusedMenuItem(
+                        backgroundColor:
+                            !isDarkMode ? Colors.white : Colors.red,
+                        trailingIcon: const Icon(Icons.library_books),
+                        title: Text("Kitabı kütüphaneme ekle"),
+                        onPressed: () async {
+                          bool? sonuc;
+                          if (_auth.currentUser != null) {
+                            sonuc = await _service.isDuplicateUniqueName(
+                                book[index].id!, _auth.currentUser);
+                          }
+
+                          print("sonuç: " + sonuc.toString());
+
+                          if (_auth.currentUser != null && !sonuc!) {
+                            allBooks.addAll(await _service.booksAddToDatabase(
+                                book[index], _auth.currentUser!));
+
+                            Navigator.pushNamed(
+                              context,
+                              '/MyLibraryPage',
+                            );
+                            print("Liste uzunluğu : " +
+                                allBooks.length.toString());
+                          } else if (_auth.currentUser == null) {
+                            SnackBar snackBar = SnackBar(
+                                action: SnackBarAction(
+                                    label: "Giriş Yap",
+                                    textColor: Colors.red,
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                          context, '/LoginPage');
+                                    }),
+                                backgroundColor: Colors.black,
+                                content: Text(
+                                  "Oturum açmadınız giriş yapmak için, ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ));
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackBar);
+                          } else {
+                            Fluttertoast.showToast(
+                                backgroundColor: Colors.red,
+                                msg: "Bu kitap zaten kütüphanenizde mevcut");
+                          }
+                        })
+                  ],
+                  child: Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      color: isDarkMode
+                          ? AppTheme.darkTheme.cardColor
+                          : AppTheme.lightTheme.cardColor,
+                      child: InkWell(
+                        onTap: () {
+                          print(book[index].id.toString() + " tıklandı");
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                                builder: (_) => BooksDetailPage(
+                                      booksModel: book[index],
+                                    )),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(3.0),
+                          child: MyCustomListTile(
+                            thumbnail: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: book[index].volumeInfo!.imageLinks ==
+                                        null
+                                    ? Image.asset("assets/images/default.jpg")
+                                    : Image.network(
+                                        book[index]
+                                            .volumeInfo!
+                                            .imageLinks!
+                                            .thumbnail!,
+                                        fit: BoxFit.fill,
+                                      )),
+                            title: book[index].volumeInfo!.title == null
+                                ? "-"
+                                : book[index].volumeInfo!.title!,
+                            description: book[index].volumeInfo!.description ==
+                                    null
+                                ? "Açıklama yok"
+                                : book[index].volumeInfo!.description! + "...",
+                            author: book[index].volumeInfo!.authors == null
+                                ? "yazar yok"
+                                : book[index].volumeInfo!.authors![0],
+                            price: book[index].saleInfo!.listPrice == null
+                                ? "Ücretsiz"
+                                : book[index]
+                                    .saleInfo!
+                                    .listPrice!
+                                    .amount
+                                    .toString(),
+                            currencyCode:
+                                book[index].saleInfo!.listPrice == null
+                                    ? Container()
+                                    : Image.asset(
+                                        "assets/images/icons/tlDark.png",
+                                        scale: 20,
+                                      ),
+                          ),
+                        ),
+                      )),
+                ),
+              );
+            })),
+      ),
+    ],
+  );
+}
+
+List<Widget> _createBottomItem() {
+  return [Icon(Icons.home), Icon(Icons.library_books), Icon(Icons.account_box)];
+}
+
+_onAlertButtonPressed(context, bool isDarkMode, book) {
+  Alert(
+    context: context,
+    type: AlertType.info,
+    title: "Şanslı Kitap",
+    desc:
+        "Şanslı kitap özelliğinin düzgün olarak çalışabilmesi için, \n uygulama arayüzündeki tüm kitapların yüklenmesi gerekiyor",
+    style: AlertStyle(
+        alertPadding: EdgeInsets.all(4),
+        isCloseButton: true,
+        descTextAlign: TextAlign.justify,
+        animationType: AnimationType.grow,
+        alertElevation: 4,
+        descStyle: EntireConstants.googleFontsMyLibraryPageDescription()),
+    buttons: [
+      DialogButton(
+        color: Colors.red,
+        child: Text(
+          "Çalıştır",
+          style: !isDarkMode
+              ? AppTheme.darkTheme.primaryTextTheme.bodyText2
+              : AppTheme.lightTheme.primaryTextTheme.bodyText2,
+        ),
+        onPressed: () {
+          Future.delayed(
+            Duration(milliseconds: 900),
+            () {
+              _showMyDialog(context, book);
+            },
+          );
+        },
+        width: 120,
+      ),
+    ],
+  ).show();
+}
+
+Future<void> _showMyDialog(BuildContext context, book) async {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: true, // user must tap button!
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 4,
+        titleTextStyle: TextStyle(color: Colors.black),
+        contentPadding: EdgeInsets.all(16),
+        insetPadding: EdgeInsets.symmetric(vertical: 150),
+        title: Center(
+            child: Text("Şanslı Kitap", style: GoogleFonts.mali(fontSize: 24))),
+        content: Column(
+          children: [
+            Flexible(
+                child: SingleChildScrollView(
+                    child: GetRandomBook(allBooks: book))),
+          ],
+        ),
+      );
+    },
+  );
+}
